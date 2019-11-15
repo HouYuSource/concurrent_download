@@ -1,0 +1,14 @@
+# 如果出现编码问题, 尝试使用在文件中定义的编码
+properties.charset=utf-8
+# 服务器请求路径
+url=https://v-78e897c1.71edge.com/videos/other/20191031/6c/b1/b66a3a53315818778b55f4a71ea66851.mp4
+# 本地保存路径
+path=C:/Users/houyu/Desktop/851A123.mp4
+# 同时下载的线程数 推荐(1-10) */
+threadCount=5
+# 每个线程每次执行的文件大小(1M-10M)这里使用 5M = 1024(B) * 1024(K) * 5(M) */
+blockSize=5242880
+# 存在是否删除
+deleteIfExist=false
+# 是否断点续传
+keepOnIfDisconnect=true
