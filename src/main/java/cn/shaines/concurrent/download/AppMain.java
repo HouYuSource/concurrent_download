@@ -16,7 +16,9 @@ public class AppMain {
         String url = propertiesUtil.getPropertyCastType("url", String.class);
         String path = propertiesUtil.getPropertyCastType("path", String.class);
         int threadCount = propertiesUtil.getPropertyOrDefault("threadCount", 5);
+        threadCount = threadCount > 10 || threadCount <= 1 ? 5 : threadCount;
         long blockSize = propertiesUtil.getPropertyOrDefault("blockSize", 5242880);
+        blockSize = (blockSize < 1024 * 1024 || blockSize > 5242880) ? 5242880 : blockSize;
         boolean deleteIfExist = propertiesUtil.getPropertyOrDefault("deleteIfExist", false);
         boolean keepOnIfDisconnect = propertiesUtil.getPropertyOrDefault("keepOnIfDisconnect", true);
         //

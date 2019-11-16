@@ -5,7 +5,6 @@ import cn.shaines.core.utils.HttpClient.Response.BodyHandlers;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.net.HttpURLConnection;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -176,12 +175,21 @@ public class ConcurrentDownLoad {
         // 先初始化一下开始时间, 如果找到断点文件的话,有可能会被覆盖
         startTime = System.currentTimeMillis();
         insertMessage("start...");
-        Long totalLength = getContentLength();
-        if(totalLength == null) {
+        long totalLength = -1;
+        for(int i = 1; i <= 5; i++) {
+            // 尝试5次获取长度
+            totalLength = getContentLength();
+            if(totalLength > 0) {
+                break;
+            }
+            insertMessage(String.format("获取长度失败: 正在重试:%s次", i));
+        }
+        if(totalLength <= 0) {
             insertMessage("获取文件的长度失败");
             throw new RuntimeException("获取文件的长度失败");
         }
         total = totalLength;
+        insertMessage("请求资源:" + this.builder.url);
         insertMessage(String.format("文件总长度:%s字节(B)", total));
         // 重置 blockSize
         this.builder.setBlockSize(this.builder.blockSize >= total ? total : this.builder.blockSize);
@@ -207,13 +215,10 @@ public class ConcurrentDownLoad {
     /**
      * 获取文件长度
      */
-    private Long getContentLength() {
-        Response<Long> response = httpClient.buildRequest(this.builder.url).GET().execute((request, http) -> {
-            if(http.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                return http.getContentLengthLong();
-            }
-            return null;
-        });
+    private long getContentLength() {
+        Response<Long> response = httpClient.buildRequest(this.builder.url).GET()
+                // 执行请求
+                .execute((request, http) -> http.getContentLengthLong());
         return response.getBody();
     }
 
@@ -332,7 +337,7 @@ public class ConcurrentDownLoad {
      */
     private void runPaceTaskSync() {
         // 已完成(当前位置) = 总量 - 未完成 + 1
-        current = new AtomicLong(total - this.paces.stream().map(v -> v.endIndex - v.startIndex + 1).reduce(0L, (a, b) -> a + b) + 1);
+        current = new AtomicLong(total - this.paces.stream().map(v -> v.endIndex - v.startIndex + 1).reduce(0L, Long::sum) + 1);
         // 创建并发工具
         countDownLatch = new CountDownLatch(paces.size());
         for(Pace pace : paces) {
@@ -378,8 +383,8 @@ public class ConcurrentDownLoad {
      */
     private String getAverageSpeed() {
         long useTime = System.currentTimeMillis() - startTime;
-        useTime = useTime <= 0 ? 1000 : useTime;
-        return (this.total / 1000 / useTime / 1000) + "KB/s";
+        useTime = useTime > 0 ? useTime / 1000 : 1;
+        return (this.total / 1000 / useTime) + "KB/s";
     }
 
     /**
